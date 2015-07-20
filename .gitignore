@@ -59,6 +59,11 @@ target/
 # IDEA
 /.idea
 *.iml
+project/project
+project/target
+src/test
+src/main/java
+src/main/scala-2.11
 
 # Tests
 /Tests

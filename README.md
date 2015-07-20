@@ -12,7 +12,7 @@
 
 ...
 
-<h2>4. How to develop</h2>
+<h2>4. How to deploy</h2>
 
 ...
 
