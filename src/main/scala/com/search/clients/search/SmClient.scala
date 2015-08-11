@@ -4,8 +4,7 @@ package com.search.clients.search
 //
 
 
-import com.search.Error
-import com.search.clients.search.SmClient._
+import com.search._
 import com.search.clients.tools.Agents
 import akka.actor.{Actor, ActorRef}
 import org.jsoup.Jsoup
@@ -28,8 +27,7 @@ class SmClient extends Actor{
   import system.dispatcher
 
   def receive = {
-    case SearchSmByKey(key) =>
-      process(key, sender())
+    case StartSearchEngineWithKey(key) => process(key, sender())
   }
 
   def process(key: String, sender: ActorRef) = {
@@ -61,9 +59,4 @@ class SmClient extends Actor{
     }
     SmItems(results.toList)
   }
-}
-
-object SmClient {
-  case class SearchSmByKey(key: String)
-  case class SmResult(result: String)
 }

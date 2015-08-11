@@ -26,7 +26,9 @@ case class AggreItems(
 
 case class Item(id: String,
                 userId:String,
+                searchUrl:String,
                 searchKey:String,
+                alid:String,
                 url:String,
                 title: String,
                 tags:String,
@@ -77,7 +79,9 @@ object NewsItem {
     def write(item: Item): BSONDocument = BSONDocument(
       "_id" -> item.id,
       "user_id" -> item.userId,
+      "search_url" -> item.searchUrl,
       "search_key" -> item.searchKey,
+      "alid" -> item.alid,
       "url" -> item.url,
       "title" -> item.title,
       "tags" -> item.tags,

@@ -11,7 +11,6 @@ import spray.http.HttpCharsets
 import scala.util.{Failure, Success}
 
 import com.search.clients.tools.Agents
-import com.search.clients.search.BaiduClient._
 
 import spray.json._
 import spray.json.DefaultJsonProtocol
@@ -34,15 +33,14 @@ class BaiduClient extends Actor {
   import system.dispatcher
 
   def receive = {
-    case SearchBaiduByKey(key) =>
-      process(key, sender())
+    case StartSearchEngineWithKey(key) => process(key, sender())
   }
 
   def process(key: String, sender: ActorRef) = {
     val pipeline =(
       addHeader("User-agent", Agents.mobile)
-      ~> sendReceive
-    )
+        ~> sendReceive
+      )
     val responseFuture = pipeline {
       // the key must be urlencode
       // the user-agent must be mobile
@@ -67,9 +65,4 @@ class BaiduClient extends Actor {
     }
     BaiduItems(results)
   }
-}
-
-object BaiduClient {
-  case class SearchBaiduByKey(key: String)
-  case class BaiduResult(result: String)
 }

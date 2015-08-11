@@ -12,16 +12,13 @@ import spray.client.pipelining._
 
 import scala.util.{Failure, Success}
 
-import com.search.clients.media.SinaClient._
-
 class SinaClient extends Actor{
 
   implicit val system = context.system
   import system.dispatcher
 
   def receive = {
-    case ExtractSinayByUrl(key) =>
-      process(key, sender())
+    case StartExtractMediaWithUrl(url) => process(url, sender())
   }
 
   def process(url: String, sender: ActorRef) = {
@@ -40,6 +37,7 @@ class SinaClient extends Actor{
         if (newscontent.content.nonEmpty && !newscontent.title.isEmpty
           && !newscontent.updateTime.isEmpty)
           sender ! ExtractResult("sina", newscontent)
+        else sender ! Error("None")
 
       case Failure(error) => sender ! Error("None")
     }
@@ -105,9 +103,4 @@ class SinaClient extends Actor{
     }
     NewsContent(url, title, tags, source, sourceUrl, author, updateTime, imageNum, content)
   }
-}
-
-object SinaClient{
-  case class ExtractSinayByUrl(key: String)
-  case class SinaResult(result: String)
 }

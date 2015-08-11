@@ -2,7 +2,9 @@ package com.search.routing
 
 import akka.actor.{Props, Actor}
 import com.process.SentenceCompressor
+import com.search.clients.redis.CacheClient
 import spray.routing.{Route, HttpService}
+import scala.language.postfixOps
 
 import com.search.clients.search._
 import com.search.clients.rest._
@@ -29,48 +31,74 @@ class RestInterface extends HttpService with Actor with PerRequestCreator {
   // media service
   val neteasyService = context.actorOf(Props[NeteasyClient])
   val sinaService = context.actorOf(Props[SinaClient])
-  val sohuService = context.actorOf(Props[SinaClient])
-  val tencentService = context.actorOf(Props[SinaClient])
+  val sohuService = context.actorOf(Props[SohuClient])
+  val tencentService = context.actorOf(Props[TencentClient])
+  val shenmaService = context.actorOf(Props[ShenmaClient])
 
-  // excavator service
-  val excavatorService = context.actorOf(Props[ExcavatorActor])
+  // content extract service
+  val extractService = context.actorOf(Props[ExtractorEngineActor])
+
+  // redis cache service
+  val cacheService = context.actorOf(Props[CacheClient])
 
   val route = {
     path("test") {
       get {
         complete{
-          "test ok"
+            "Test OK."
         }
       }
     } ~
     path("search") {
       get {
-        parameters('key.as[String], 'uid.as[String]) { (searchKey, userId) =>
+        parameters('key.as[String]) { searchKey =>
           searchWithKey {
-            SearchWithKey(userId, searchKey)
+            SearchWithKey(searchKey)
           }
         }
       }
     } ~
+      path("extracter") {
+        get {
+          parameters('urls.as[String]) { searchKey =>
+            extractContentWithSearchItems {
+              SearchWithKey(searchKey)
+            }
+          }
+        }
+//      path("extracter" / Segment) { seg =>
+//        extractContentWithSearchItems{
+//          SearchWithKey(seg)
+//        }
+      } ~
       path("SentenceCompressor") {
         get {
           parameters('sentence) { sentence =>
             complete(SentenceCompressor.trunkhankey(sentence, log = false))
           }
         }
+      } ~
+      path("excavator") {
+        get {
+          parameters('uid.as[String], 'album.as[String], 'url.as[String]?, 'key.as[String]?) {
+            (userId, album, searchUrl, searchKey) =>
+              excavatorWith{
+                ExcavatorInfo(userId, album, searchUrl.getOrElse(""), searchKey.getOrElse(""))
+              }
+          }
+        }
       }
   }
 
-  def excavatorWithKey(message : RestMessage): Route =
+  def excavatorWith(message : RestMessage): Route =
     ctx => perRequest(ctx, Props(
-      new ExcavatorActor), message)
+      new ExcavatorEngineActor(extractService, cacheService)), message)
 
   def searchWithKey(message : RestMessage): Route =
     ctx => perRequest(ctx, Props(
-      new GetResultsWithkeysActor(baiduService, bingService, qihooService, smService, sougouService,
-        excavatorService)), message)
+      new AggregateSearchWithKeyActor(baiduService, bingService, qihooService, smService, sougouService)), message)
 
-  def extractWithUrl(message: RestMessage):Route =
+  def extractContentWithSearchItems(message : RestMessage): Route =
     ctx => perRequest(ctx, Props(
-      new ExtractContentWithUrlActor(sinaService, neteasyService, sohuService, tencentService)), message)
+      new ExtractContentWithSearchItemsActor(neteasyService, sinaService, sohuService, tencentService, shenmaService)), message)
 }

@@ -4,7 +4,7 @@ package com.search.clients.search
 //
 
 import akka.actor.{Actor, ActorRef}
-import com.search.Error
+import com.search._
 import com.search.clients.tools.Agents
 import org.jsoup.Jsoup
 import spray.client.pipelining._
@@ -12,9 +12,6 @@ import spray.http.HttpCharsets
 import spray.httpx.encoding.Deflate
 
 import scala.util.{Failure, Success}
-
-import com.search.clients.search.QihooClient._
-
 import spray.json.DefaultJsonProtocol
 
 case class QihooItem(title:String, url:String)
@@ -25,27 +22,23 @@ object QihooJsonProtocol extends DefaultJsonProtocol{
   implicit val itemsFormat = jsonFormat1(QihooItems.apply)
 }
 
-
 class QihooClient extends Actor{
 
   implicit val system = context.system
   import system.dispatcher
 
   def receive = {
-    case SearchQihooByKey(key) =>
-      process(key, sender())
+    case StartSearchEngineWithKey(key) => process(key, sender())
   }
 
   def process(key: String, sender: ActorRef) = {
     val pipeline =(
       addHeader("User-agent", Agents.pc)
-//        ~> addHeader("Accept-Encoding", "gzip, deflate, utf-8")
         ~> addHeader("Accept-Encoding", "charset=utf-8")
         ~> sendReceive
         ~> decode(Deflate)
       )
     val responseFuture = pipeline {
-//      Get(s"http://m.news.haosou.com/ns?q=${java.net.URLEncoder.encode(key, "UTF-8")}&src=srp")
       Get(s"http://news.haosou.com/ns?q=${java.net.URLEncoder.encode(key, "UTF-8")}&rank=rank&src=srp&tn=news")
       // html
     }
@@ -70,9 +63,4 @@ class QihooClient extends Actor{
     }
     QihooItems(results.toList)
   }
-}
-
-object QihooClient{
-  case class SearchQihooByKey(key: String)
-  case class QihooResult(result: String)
 }

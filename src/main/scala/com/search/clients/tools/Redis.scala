@@ -7,16 +7,39 @@ import com.redis._
 import serialization._
 import Parse.Implicits._
 
+
+case class HashTable(tableName:String, key:String, value:String)
+
 object Redis{
 
-  def hmSet(setNameAndSearchKey:String, fields: Map[String, String]) = {
-    val r = new RedisClient("121.41.75.213", 6379)
-    r.hmset(setNameAndSearchKey, fields)
+  def hmSet(tasks:List[HashTable]) = {
+    val clients = new RedisClientPool("localhost", 6379)
+    clients.withClient {
+      client => {
+        tasks.foreach(task =>
+          client.hset(task.tableName, task.key, task.value)
+        )
+      }
+    }
   }
 
-  def hmGet(setNameAndSearchKey:String, field:String) = {
+  def hmSet(hashTableName:String, fields: Map[String, String]) = {
     val r = new RedisClient("121.41.75.213", 6379)
-    r.hmget[String, String](setNameAndSearchKey, field)
+    r.hmset(hashTableName, fields)
   }
 
+  def hSet(hashTableName:String, fieldName:String, fieldValue:String) = {
+    val r = new RedisClient("121.41.75.213", 6379)
+    r.hset(hashTableName, fieldName, fieldValue)
+  }
+
+  def hmGet(hashTableName:String, field:String) = {
+    val r = new RedisClient("121.41.75.213", 6379)
+    r.hmget[String, String](hashTableName, field)
+  }
+
+  def hmGet(hashTableName:String, searchUrl:String, searchKey:String) = {
+    val r = new RedisClient("121.41.75.213", 6379)
+    r.hmget[String, String](hashTableName, searchUrl, searchKey)
+  }
 }

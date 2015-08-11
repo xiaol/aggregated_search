@@ -12,16 +12,13 @@ import spray.client.pipelining._
 
 import scala.util.{Failure, Success}
 
-import com.search.clients.media.SohuClient._
-
 class SohuClient extends Actor{
 
   implicit val system = context.system
   import system.dispatcher
 
   def receive = {
-    case ExtractSohuByUrl(key) =>
-      process(key, sender())
+    case StartExtractMediaWithUrl(url) => process(url, sender())
   }
 
   def process(url: String, sender: ActorRef) = {
@@ -40,6 +37,7 @@ class SohuClient extends Actor{
         if (newscontent.content.nonEmpty && !newscontent.title.isEmpty
           && !newscontent.source.isEmpty && !newscontent.updateTime.isEmpty)
           sender ! ExtractResult("sohu", newscontent)
+        else sender ! Error("None")
 
       case Failure(error) => sender ! Error("None")
     }
@@ -101,9 +99,4 @@ class SohuClient extends Actor{
     }
     NewsContent(url, title, tags, source, sourceUrl, author, updateTime, imageNum, content)
   }
-}
-
-object SohuClient{
-  case class ExtractSohuByUrl(key: String)
-  case class SohuResult(result: String)
 }

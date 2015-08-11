@@ -10,9 +10,6 @@ import spray.client.pipelining._
 import spray.http.HttpCharsets
 
 import scala.util.{Failure, Success}
-
-import com.search.clients.search.BingClient._
-
 import spray.json.DefaultJsonProtocol
 
 case class BingItem(title:String, url:String)
@@ -29,8 +26,7 @@ class BingClient extends Actor{
   import system.dispatcher
 
   def receive = {
-    case SearchBingByKey(key) =>
-      process(key, sender())
+    case StartSearchEngineWithKey(key) => process(key, sender())
   }
 
   def process(key: String, sender: ActorRef) = {
@@ -59,9 +55,4 @@ class BingClient extends Actor{
     }
     BingItems(results.toList)
   }
-}
-
-object BingClient{
-  case class SearchBingByKey(key: String)
-  case class BingResult(result: String)
 }

@@ -16,8 +16,7 @@ class GoogleClient extends Actor{
   import system.dispatcher
 
   def receive = {
-    case SearchGoogleByKey(key) =>
-      process(key, sender())
+    case SearchGoogleByKey(key) => process(key, sender())
   }
 
   def process(key: String, sender: ActorRef) = {

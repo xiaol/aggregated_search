@@ -39,14 +39,30 @@ libraryDependencies ++= {
 
     // Html parser
     "junit"               % "junit"           % "4.12",
-    "org.jsoup"           % "jsoup"           % "1.8.2",
+    "org.jsoup"           % "jsoup"           % "1.8.3",
 
     // redis-driver
     "net.debasishg"       %% "redisclient"    % "3.0",
 
     // mongo-driver
-    "org.reactivemongo"   %% "reactivemongo"  % "0.11.4"
+    "org.reactivemongo"   %% "reactivemongo"  % "0.11.4",
+
+    "org.ansj"            % "ansj_seg"        % "0.9",
+
+    // base64 encode/decode
+    "commons-codec"       % "commons-codec"   % "1.10"
   )
 }
 
 Revolver.settings.settings
+
+assemblyMergeStrategy in assembly := {
+  case PathList("org", "ansj", xs @ _*)                 => MergeStrategy.first
+  case PathList(ps @ _*) if ps.last endsWith ".dic"   => MergeStrategy.first
+  case PathList(ps @ _*) if ps.last endsWith ".data"  => MergeStrategy.first
+//  case "application.conf"                            => MergeStrategy.concat
+//  case "unwanted.txt"                                => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
+}

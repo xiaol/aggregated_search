@@ -4,16 +4,13 @@ package com.search.clients.search
 //
 
 import akka.actor.{Actor, ActorRef}
-import com.search.Error
+import com.search._
 import com.search.clients.tools.Agents
 import org.jsoup.Jsoup
 import spray.client.pipelining._
 import spray.http.HttpCharsets
 
 import scala.util.{Failure, Success}
-
-import com.search.clients.search.SougouClient._
-
 import spray.json.DefaultJsonProtocol
 
 case class SougouItem(title:String, url:String)
@@ -30,8 +27,7 @@ class SougouClient extends Actor{
   import system.dispatcher
 
   def receive = {
-    case SearchSougouByKey(key) =>
-      process(key, sender())
+    case StartSearchEngineWithKey(key) => process(key, sender())
   }
 
   def process(key: String, sender: ActorRef) = {
@@ -64,9 +60,4 @@ class SougouClient extends Actor{
     }
     SougouItems(results.toList)
   }
-}
-
-object SougouClient{
-  case class SearchSougouByKey(key: String)
-  case class SougouResult(result: String)
 }

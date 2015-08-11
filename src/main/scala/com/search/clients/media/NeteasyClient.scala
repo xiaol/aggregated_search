@@ -1,5 +1,8 @@
 package com.search.clients.media
 
+// Created by ZG on 15/7/20.
+//
+
 import com.search._
 import akka.actor.{Actor, ActorRef}
 import com.search.clients.tools.{Extractor, Agents}
@@ -9,19 +12,13 @@ import spray.client.pipelining._
 
 import scala.util.{Failure, Success}
 
-import com.search.clients.media.NeteasyClient._
-
-// Created by ZG on 15/7/20.
-//
-
 class NeteasyClient extends Actor{
 
   implicit val system = context.system
   import system.dispatcher
 
   def receive = {
-    case ExtractNeteasyByUrl(key) =>
-      process(key, sender())
+    case StartExtractMediaWithUrl(url) => process(url, sender())
   }
 
   def process(url: String, sender: ActorRef) = {
@@ -40,6 +37,7 @@ class NeteasyClient extends Actor{
         if (newscontent.content.nonEmpty && !newscontent.title.isEmpty
           && !newscontent.source.isEmpty && !newscontent.updateTime.isEmpty)
           sender ! ExtractResult("neteasy", newscontent)
+        else sender ! Error("None")
 
       case Failure(error) => sender ! Error("None")
     }
@@ -97,9 +95,4 @@ class NeteasyClient extends Actor{
     }
     NewsContent(url, title, tags, source, sourceUrl, author, updateTime, imageNum, content)
   }
-}
-
-object NeteasyClient{
-  case class ExtractNeteasyByUrl(key: String)
-  case class NeteasyResult(result: String)
 }

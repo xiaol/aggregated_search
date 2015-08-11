@@ -12,16 +12,13 @@ import spray.client.pipelining._
 
 import scala.util.{Failure, Success}
 
-import com.search.clients.media.TencentClient._
-
 class TencentClient extends Actor{
 
   implicit val system = context.system
   import system.dispatcher
 
   def receive = {
-    case ExtractTencentByUrl(key) =>
-      process(key, sender())
+    case StartExtractMediaWithUrl(url) => process(url, sender())
   }
 
   def process(url: String, sender: ActorRef) = {
@@ -40,6 +37,7 @@ class TencentClient extends Actor{
         if (newscontent.content.nonEmpty && !newscontent.title.isEmpty
           && !newscontent.source.isEmpty && !newscontent.updateTime.isEmpty)
           sender ! ExtractResult("tencent", newscontent)
+        else sender ! Error("None")
 
       case Failure(error) => sender ! Error("None")
     }
@@ -101,9 +99,4 @@ class TencentClient extends Actor{
     }
     NewsContent(url, title, tags, source, sourceUrl, author, updateTime, imageNum, content)
   }
-}
-
-object TencentClient{
-  case class ExtractTencentByUrl(key: String)
-  case class TencentResult(result: String)
 }
