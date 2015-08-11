@@ -6,6 +6,8 @@ package com.search.clients.media
 import akka.actor.{Props, Actor}
 import com.search._
 
+import scala.collection.mutable.ArrayBuffer
+
 class TemplateExtractorClient extends Actor{
 
   // media service
@@ -14,6 +16,11 @@ class TemplateExtractorClient extends Actor{
   val sohuService = context.actorOf(Props[SohuClient])
   val tencentService = context.actorOf(Props[TencentClient])
   val shenmaService = context.actorOf(Props[ShenmaClient])
+
+  var sendAlready = 0
+  var receiveAlready = 0
+  var resultList:ArrayBuffer[ExtractResult] = ArrayBuffer()
+
 
   var info:ExcavatorInfo = _
 
@@ -24,37 +31,46 @@ class TemplateExtractorClient extends Actor{
       startMediaServices(searchItems)
 
     case extractResult:ExtractResult =>
-      context.parent ! TemplateExtractResult(info, extractResult)
+      if(extractResult.newsContent.imageNum != 0)
+        context.parent ! TemplateExtractResult(info, extractResult)
+      else {
+        receiveAlready += 1
+        resultList += extractResult
+        println(s"Not already, sendAlready=$sendAlready,receiveAlready=$receiveAlready")
+        checkReply()
+      }
 
     case _ =>
+      receiveAlready += 1
+      checkReply()
   }
 
   private def startMediaServices(searchItems:List[UrlMapTitleItem]) = {
-    var neteasyFlag = true
-    var sinaFlag = true
-    var sohuFlag = true
-    var tencentFlag = true
-    var shenmaFlag = true
-
     for(item <- searchItems){
       item match {
-        case UrlMapTitleItem(url, title) if item.url.contains("163.com/") && neteasyFlag =>
-          neteasyFlag = false
+        case UrlMapTitleItem(url, title) if item.url.contains("163.com/") =>
+          sendAlready += 1
           neteasyService    ! StartExtractMediaWithUrl(url)
-        case UrlMapTitleItem(url, title) if item.url.contains("sohu.com/") && sohuFlag =>
-          sohuFlag = false
+        case UrlMapTitleItem(url, title) if item.url.contains("sohu.com/") =>
+          sendAlready += 1
           sohuService       ! StartExtractMediaWithUrl(url)
-        case UrlMapTitleItem(url, title) if item.url.contains("sina.com") && sinaFlag =>
-          sinaFlag = false
+        case UrlMapTitleItem(url, title) if item.url.contains("sina.com") =>
+          sendAlready += 1
           sinaService       ! StartExtractMediaWithUrl(url)
-        case UrlMapTitleItem(url, title) if item.url.contains("qq.com/") && tencentFlag =>
-          tencentFlag = false
+        case UrlMapTitleItem(url, title) if item.url.contains("qq.com/") =>
+          sendAlready += 1
           tencentService    ! StartExtractMediaWithUrl(url)
-        case UrlMapTitleItem(url, title) if item.url.contains("zzd.sm.cn/") && shenmaFlag =>
-          shenmaFlag = false
+        case UrlMapTitleItem(url, title) if item.url.contains("zzd.sm.cn/") =>
+          sendAlready += 1
           shenmaService     ! StartExtractMediaWithUrl(url)
         case _ =>
       }
+    }
+  }
+
+  private def checkReply() = {
+    if(sendAlready==receiveAlready){
+      context.parent ! TemplateExtractResult(info, resultList.head)
     }
   }
 }
