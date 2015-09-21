@@ -3,7 +3,7 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <target>System.out</target>
         <encoder>
-            <pattern>%X{akkaTimestamp} %-5level[%thread] %logger{0} - %msg%n</pattern>
+            <pattern>%date{yyyy-MM-dd} %-5level[%thread] %logger{0} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -15,12 +15,9 @@
         </encoder>
     </appender>
 
-    <logger name="akka" level="INFO" />
-    <logger name="spray" level="INFO" />
+    <logger name="akka" level="ERROR" />
 
-    <logger name="com.search" level="INFO" />
-
-    <root level="DEBUG">
+    <root level="ERROR">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>
