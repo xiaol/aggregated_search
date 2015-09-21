@@ -1,20 +1,22 @@
 package routers
 
-import akka.actor.{Props, Actor}
-import cores.{TestNestedSubActor, TestNestedActor}
-
+//import com.search._
+//import com.search.clients.media._
+//import com.search.clients.redis.CacheClient
+//import com.search.clients.rest._
+//import com.search.clients.search._
+//import com.search.core._
 //import com.process.{KeywordsExtractor, SentenceCompressor, NerExtractor}
-import com.process.{KeywordsExtractor, NerExtractor}
-import nlps.SentenceCompressor
-import com.search.clients.redis.CacheClient
-import spray.routing.{Route, HttpService}
-import scala.language.postfixOps
+//import com.process.{KeywordsExtractor, NerExtractor}
 
-import com.search.clients.search._
-import com.search.clients.rest._
-import com.search.clients.media._
-import com.search.core._
-import com.search._
+import utils.Base64Utils
+
+import scala.language.postfixOps
+import akka.actor.{Actor, Props}
+import spray.routing.{HttpService, Route}
+
+import nlps._
+import cores._
 
 class RestInterface extends HttpService with Actor with PerRequestCreator {
 
@@ -22,30 +24,31 @@ class RestInterface extends HttpService with Actor with PerRequestCreator {
 
   def receive = runRoute(route)
 
-  // rest service
-  val ipinfoService = context.actorOf(Props[IpinfoClient], "ipinfoService")
+  // aggregate search service
+  val aggregateSearchServer = context.actorOf(Props[AggregateSearchActor], "AggregateSearchActor")
 
-  // search service
-  val baiduService = context.actorOf(Props[BaiduClient], "baiduService")
-  val bingService = context.actorOf(Props[BingClient], "bingService")
-  val qihooService = context.actorOf(Props[QihooClient], "qihooService")
-  val smService = context.actorOf(Props[SmClient], "smService")
-  val sougouService = context.actorOf(Props[SougouClient], "sougouService")
+  // template content extractor service
+  val templateContentExtractServer = context.actorOf(Props[TemplateContentExtractActor], "TemplateContentExtractActor")
 
-  // media service
-  val neteasyService = context.actorOf(Props[NeteasyClient], "neteasyService")
-  val sinaService = context.actorOf(Props[SinaClient], "sinaService")
-  val sohuService = context.actorOf(Props[SohuClient], "sohuService")
-  val tencentService = context.actorOf(Props[TencentClient], "tencentService")
-  val shenmaService = context.actorOf(Props[ShenmaClient], "shenmaService")
+  // nlp service
+  val nerClient = context.actorOf(Props[NerExtractorActor], "NerExtractorActor")
+  val keywordsClient = context.actorOf(Props[KeywordsExtractorActor], "KeywordsExtractorActor")
 
-  // content extract service
-  val extractService = context.actorOf(Props[ExtractorEngineActor], "extractService")
+  // excavator cache service
+  val excavatorCacheClient = context.actorOf(Props[ExcavatorCacheActor], "ExcavatorCacheActor")
 
-  // redis cache service
-  val cacheService = context.actorOf(Props[CacheClient], "cacheService")
+  // excavator processor service
+  val excavatorProcessorClient = context.actorOf(Props(new ExcavatorProcessorActor(
+    keywordsClient,nerClient)), "ExcavatorProcessorActor")
 
-  val testNestedSubActor = context.actorOf(Props[TestNestedSubActor], "testNestedSubActor")
+
+//  // content extract service
+//  val extractService = context.actorOf(Props[ExtractorEngineActor], "extractService")
+//
+//  // redis cache service
+//  val cacheService = context.actorOf(Props[CacheClient], "cacheService")
+
+//  val testNestedSubActor = context.actorOf(Props[TestNestedSubActor], "testNestedSubActor")
 
   val route = {
     path("test") {
@@ -54,85 +57,75 @@ class RestInterface extends HttpService with Actor with PerRequestCreator {
             "Test OK."
         }
       }
-    } ~
-    path("search") {
-      get {
-        parameters('key.as[String]) { searchKey =>
-          searchWithKey {
-            SearchWithKey(searchKey)
+    }~
+      path("excavator") {
+        get {
+          parameters('uid.as[String], 'album.as[String], 'url.as[String]?, 'key.as[String]?) {
+            (userId, album, searchUrl, searchKey) =>
+              startExcavator{
+                ExcavatorInfo(userId, album, searchUrl.getOrElse(""), searchKey.getOrElse(""))
+              }
           }
         }
-      }
-    } ~
-      path("extracter") {
+      } ~
+      path("search") {
         get {
-          parameters('urls.as[String]) { searchKey =>
-            extractContentWithSearchItems {
-              SearchWithKey(searchKey)
+          parameters('key.as[String]) { searchKey =>
+            startAggregateSearch {
+              ExtractAggregateSearch(searchKey)
             }
           }
         }
-//      path("extracter" / Segment) { seg =>
-//        extractContentWithSearchItems{
-//          SearchWithKey(seg)
-//        }
+      } ~
+      path("extracter") {
+        get {
+          parameters('urls.as[String]) { urlList =>
+            startExtractTemplateContent {
+              ExtractContentByTemplateWithUrls(urlList)
+            }
+          }
+        }
       } ~
       path("SentenceCompressor") {
         get {
           parameters('sentence) { sentence =>
-//            complete(SentenceCompressor.trunkhankey(sentence, log = false))
             complete(SentenceCompressor.trunkhankey(sentence, log = false))
-          }
-        }
-      } ~
-      path("ner") {
-        get {
-          parameters('s) { sentence =>
-            complete(NerExtractor.getNerResponse(sentence))
           }
         }
       } ~
       path("keywords") {
         get {
           parameters('s) { sentence =>
-            complete(KeywordsExtractor.getKeywordsResponse(sentence))
+            startExtractKeywords{
+              ExtractKeywords(sentence)
+            }
           }
         }
       } ~
-      path("excavator") {
-        get {
-          parameters('uid.as[String], 'album.as[String], 'url.as[String]?, 'key.as[String]?) {
-            (userId, album, searchUrl, searchKey) =>
-              excavatorWith{
-                ExcavatorInfo(userId, album, searchUrl.getOrElse(""), searchKey.getOrElse(""))
-              }
-          }
-        }
-      } ~
-      path("testnest") {
+      path("ner") {
         get {
           parameters('s) { sentence =>
-            testNestedActorWith{
-              SearchWithKey(sentence)
+            startExtractNer{
+              ExtractNers(sentence)
             }
           }
         }
       }
   }
 
-  def testNestedActorWith(message : RestMessage): Route =
+  def startExcavator(message : RestMessage): Route =
     ctx => perRequest(ctx, Props(
-      new TestNestedActor(testNestedSubActor)), message)
+      new ExcavatorServiceActor(excavatorCacheClient, excavatorProcessorClient)), message)
 
-  def excavatorWith(message : RestMessage): Route =
-    ctx => perRequest(ctx, Props(
-      new ExcavatorEngineActor(extractService, cacheService)), message)
+  def startAggregateSearch(message: RestMessage): Route =
+    ctx => perRequest(ctx, Props(new AggregateSearchActor), message)
 
-  def searchWithKey(message : RestMessage): Route =
-    ctx => perRequest(ctx, Props(
-      new AggregateSearchWithKeyActor(baiduService, bingService, qihooService, smService, sougouService)), message)
+  def startExtractTemplateContent(message: RestMessage): Route =
+    ctx => perRequest(ctx, Props(new TemplateContentExtractServer(templateContentExtractServer)), message)
 
-  def extractContentWithSearchItems(message : RestMessage): Route =
-    ctx => perRequest(ctx, Props(
-      new ExtractContentWithSearchItemsActor(neteasyService, sinaService, sohuService, tencentService, shenmaService)), message)
+  def startExtractKeywords(message: RestMessage): Route =
+    ctx => perRequest(ctx, Props(new KeywordsExtractorActorServer(keywordsClient)), message)
+
+  def startExtractNer(message: RestMessage): Route =
+    ctx => perRequest(ctx, Props(new NerExtractorActorServer(nerClient)), message)
 }

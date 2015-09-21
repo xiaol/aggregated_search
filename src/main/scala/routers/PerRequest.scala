@@ -9,8 +9,8 @@ import spray.httpx.Json4sSupport
 import scala.concurrent.duration._
 import org.json4s.DefaultFormats
 import spray.http.StatusCode
-import com.search._
-import com.search.routing.PerRequest._
+import cores._
+import routers.PerRequest._
 
 trait PerRequest extends Actor with Json4sSupport {
 
