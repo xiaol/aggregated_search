@@ -1,15 +1,15 @@
-package com.search
+package routers
 
 // Created by ZG on 15/7/20.
 //
 
 import akka.actor.{ActorSystem, Props}
 import akka.io.IO
-import com.search.routing._
-import com.typesafe.config.ConfigFactory
-import spray.can.Http
 import akka.pattern.ask
 import akka.util.Timeout
+import com.typesafe.config.ConfigFactory
+import spray.can.Http
+
 import scala.concurrent.duration._
 
 object Boot extends App{
