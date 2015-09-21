@@ -4,18 +4,16 @@ package clients.searchengine
 //
 
 import akka.actor.{Actor, ActorRef}
-import com.search._
-import com.search.clients.tools.Agents
+import utils.Agents
 import org.jsoup.Jsoup
 import spray.client.pipelining._
 import spray.http.HttpCharsets
 import spray.httpx.encoding.Deflate
-
 import scala.util.{Failure, Success}
 import spray.json.DefaultJsonProtocol
 
 case class QihooItem(title:String, url:String)
-case class QihooItems(items: List[QihooItem])
+case class QihooItems(items: List[QihooItem]) extends SearchResultItems
 
 object QihooJsonProtocol extends DefaultJsonProtocol{
   implicit val itemFormat = jsonFormat2(QihooItem.apply)
@@ -40,14 +38,12 @@ class QihooClient extends Actor{
       )
     val responseFuture = pipeline {
       Get(s"http://news.haosou.com/ns?q=${java.net.URLEncoder.encode(key, "UTF-8")}&rank=rank&src=srp&tn=news")
-      // html
     }
     responseFuture onComplete {
       case Success(response) =>
-        println("Qihoo result")
         sender ! extractor(response.entity.asString(HttpCharsets.`UTF-8`))
 
-      case Failure(error) => sender ! Error("qihoo")
+      case Failure(error) => sender ! QihooItems(List[QihooItem]())
     }
   }
 

@@ -4,19 +4,15 @@ package clients.searchengine
 //
 
 import akka.actor.{Actor, ActorRef}
-import com.search._
 import spray.client.pipelining._
 import spray.http.HttpCharsets
-
 import scala.util.{Failure, Success}
-
-import com.search.clients.tools.Agents
-
+import utils.Agents
 import spray.json._
 import spray.json.DefaultJsonProtocol
 
 case class BaiduItem(title:String, url:String)
-case class BaiduItems(items: List[BaiduItem])
+case class BaiduItems(items: List[BaiduItem]) extends SearchResultItems
 
 case class BaiduApiResultItem(title:String, url:String, author:String,
                               abs:String, sortTime:String, publicTime:String, imgUrl:String)
@@ -42,16 +38,12 @@ class BaiduClient extends Actor {
         ~> sendReceive
       )
     val responseFuture = pipeline {
-      // the key must be urlencode
-      // the user-agent must be mobile
       Get(s"http://m.baidu.com/news?tn=bdapisearch&word=${java.net.URLEncoder.encode(key, "UTF-8")}&pn=0&rn=20")
-      // return json
     }
     responseFuture onComplete {
       case Success(response) =>
-        println("baidu result")
         sender ! extractor(response.entity.asString(HttpCharsets.`UTF-8`))
-      case Failure(error) => sender ! Error("baidu")
+      case Failure(error) => sender ! BaiduItems(List[BaiduItem]())
     }
   }
 

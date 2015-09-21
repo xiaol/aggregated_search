@@ -4,16 +4,15 @@ package clients.searchengine
 // 
 
 import akka.actor.{Actor, ActorRef}
-import com.search._
 import org.jsoup.Jsoup
 import spray.client.pipelining._
 import spray.http.HttpCharsets
-
+import utils.Agents
 import scala.util.{Failure, Success}
 import spray.json.DefaultJsonProtocol
 
 case class BingItem(title:String, url:String)
-case class BingItems(items: List[BingItem])
+case class BingItems(items: List[BingItem]) extends SearchResultItems
 
 object BingJsonProtocol extends DefaultJsonProtocol{
   implicit val itemFormat = jsonFormat2(BingItem.apply)
@@ -30,17 +29,18 @@ class BingClient extends Actor{
   }
 
   def process(key: String, sender: ActorRef) = {
-    val pipeline = sendReceive
+    val pipeline = (
+      addHeader("User-agent", Agents.pc)
+        ~> sendReceive
+      )
     val responseFuture = pipeline {
       Get(s"http://cn.bing.com/search?q=${java.net.URLEncoder.encode(key, "UTF-8")}")
-      // html
     }
     responseFuture onComplete {
       case Success(response) =>
-        println("Bing result")
         sender ! extractor(response.entity.asString(HttpCharsets.`UTF-8`))
 
-      case Failure(error) => sender ! Error("bing")
+      case Failure(error) => sender ! BingItems(List[BingItem]())
     }
   }
 

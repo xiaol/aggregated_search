@@ -3,9 +3,7 @@ package clients.searchengine
 // Created by ZG on 15/7/22.
 //
 
-
-import com.search._
-import com.search.clients.tools.Agents
+import utils.Agents
 import akka.actor.{Actor, ActorRef}
 import org.jsoup.Jsoup
 import spray.client.pipelining._
@@ -15,7 +13,7 @@ import scala.util.{Failure, Success}
 import spray.json.DefaultJsonProtocol
 
 case class SmItem(title:String, url:String)
-case class SmItems(items: List[SmItem])
+case class SmItems(items: List[SmItem]) extends SearchResultItems
 
 object SmJsonProtocol extends DefaultJsonProtocol{
   implicit val itemFormat = jsonFormat2(SmItem.apply)
@@ -36,15 +34,12 @@ class SmClient extends Actor{
         ~> sendReceive
       )
     val responseFuture = pipeline {
-      // the key must be urlencode
       Get(s"http://hotnews.sm.cn/s?q=${java.net.URLEncoder.encode(key, "UTF-8")}&from=news&safe=1&by=submit&snum=0")
-      // return html
     }
     responseFuture onComplete {
       case Success(response) =>
-        println("Sm result")
         sender ! extractor(response.entity.asString(HttpCharsets.`UTF-8`))
-      case Failure(error) => sender ! Error("sm")
+      case Failure(error) => sender ! SmItems(List[SmItem]())
     }
   }
 

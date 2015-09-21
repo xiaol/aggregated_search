@@ -4,8 +4,7 @@ package clients.searchengine
 //
 
 import akka.actor.{Actor, ActorRef}
-import com.search._
-import com.search.clients.tools.Agents
+import utils.Agents
 import org.jsoup.Jsoup
 import spray.client.pipelining._
 import spray.http.HttpCharsets
@@ -14,7 +13,7 @@ import scala.util.{Failure, Success}
 import spray.json.DefaultJsonProtocol
 
 case class SougouItem(title:String, url:String)
-case class SougouItems(items: List[SougouItem])
+case class SougouItems(items: List[SougouItem]) extends SearchResultItems
 
 object SougouJsonProtocol extends DefaultJsonProtocol{
   implicit val itemFormat = jsonFormat2(SougouItem.apply)
@@ -37,14 +36,12 @@ class SougouClient extends Actor{
       )
     val responseFuture = pipeline {
       Get(s"http://news.sogou.com/news?oq=&mode=1&manual=&query=${java.net.URLEncoder.encode(key, "UTF-8")}&time=0&ri=0&sort=0&page=1")
-      // html
     }
     responseFuture onComplete {
       case Success(response) =>
-        println("Sougou result")
         sender ! extractor(response.entity.asString(HttpCharsets.`UTF-8`))
 
-      case Failure(error) => sender ! Error("sougou")
+      case Failure(error) => sender ! SougouItems(List[SougouItem]())
     }
   }
 
