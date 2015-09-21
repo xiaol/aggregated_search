@@ -25,7 +25,7 @@ object SentenceCompressor extends Extractors{
 //  val rulefile = new DepRules()
 //  rulefile.reader("/work/pro/src/main/resources/deprules.txt")
 
-  def trunkhankey(str: String, log: Boolean) = {
+  def trunkhankey(str: String, log: Boolean=false) = {
 
     if (log) {
       Log.log("_IKeyven.Function.trunkhankey")
