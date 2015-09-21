@@ -5,22 +5,20 @@ package redis
 
 import akka.actor.Actor
 import com.redis._
-import serialization._
-import Parse.Implicits._
-
-import RedisClients._
+import com.redis.serialization.Parse.Implicits._
+import com.redis.serialization._
 import com.search.clients.tools.ExceptionHandler.safely
+import redis.RedisClients._
 
 class RedisClients extends Actor{
 
   def receive = {
     case HashTableList(tasks) =>
-      println("get HashTableList")
+      println("Get a HashTableList, update to redis server!")
       hmSet(tasks)
     case HashTable(tableName, key, value) => hSet(tableName, key, value)
 
   }
-
 }
 
 object RedisClients{
