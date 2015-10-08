@@ -117,7 +117,7 @@ class AggregateSearchActor extends Actor{
         sougouClient  ! StartSearchEngineWithKey(key)
 
         import context.dispatcher
-        val timeoutMessager = context.system.scheduler.scheduleOnce(30.seconds, self, AccessTimeout)
+        val timeoutMessager = context.system.scheduler.scheduleOnce(15.seconds, self, AccessTimeout)
 
       }))
     case _ =>

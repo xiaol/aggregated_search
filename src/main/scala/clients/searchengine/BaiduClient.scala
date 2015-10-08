@@ -6,10 +6,16 @@ package clients.searchengine
 import akka.actor.{Actor, ActorRef}
 import spray.client.pipelining._
 import spray.http.HttpCharsets
+import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success}
 import utils.Agents
 import spray.json._
 import spray.json.DefaultJsonProtocol
+
+import org.json4s.native.Serialization
+import org.json4s.native.Serialization.{read, write}
+import org.json4s._
+import org.json4s.native.JsonMethods._
 
 case class BaiduItem(title:String, url:String)
 case class BaiduItems(items: List[BaiduItem]) extends SearchResultItems
@@ -48,13 +54,27 @@ class BaiduClient extends Actor {
   }
 
   def extractor(html:String) = {
-    import BaiduJsonProtocol._
-    val ApiItems = BaiduApiResultItems(html.parseJson.convertTo[List[BaiduApiResultItem]])
-    val results:List[BaiduItem] = {
-      for (item <- ApiItems.items) yield {
-        BaiduItem(item.title, item.url)
-      }
+
+    val resultList:ArrayBuffer[BaiduItem] = ArrayBuffer()
+
+    implicit val formats = Serialization.formats(NoTypeHints)
+    val itemList = parse(html) \\ "list"
+    for (item <- itemList.children.filter(x =>
+      x.\("title") != JNothing && x.\("url") != JNothing)) {
+      println(item.\("title").values.toString)
+      println(item.\("url").values.toString)
+      resultList.append(BaiduItem(item.\("title").values.toString, item.\("url").values.toString))
     }
-    BaiduItems(results)
+
+//    import BaiduJsonProtocol._
+//    val ApiItems = BaiduApiResultItems(html.parseJson.convertTo[List[BaiduApiResultItem]])
+////    val ApiItems = BaiduApiResultItems(list.toString.parseJson.convertTo[List[BaiduApiResultItem]])
+//    val results:List[BaiduItem] = {
+//      for (item <- ApiItems.items) yield {
+//        BaiduItem(item.title, item.url)
+//      }
+//    }
+//    BaiduItems(results)
+    BaiduItems(resultList.toList)
   }
 }

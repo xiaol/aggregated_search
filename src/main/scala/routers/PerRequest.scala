@@ -22,7 +22,7 @@ trait PerRequest extends Actor with Json4sSupport {
   def target: ActorRef
   def message: RestMessage
 
-  setReceiveTimeout(10.seconds)
+  setReceiveTimeout(20.seconds)
   target ! message
 
   def receive = {
