@@ -6,8 +6,8 @@ version := "1.0"
 
 //logLevel := sbt.Level.Debug
 
-scalaVersion := "2.11.6"
-scalaVersion in ThisBuild := "2.11.6"
+scalaVersion := "2.11.7"
+scalaVersion in ThisBuild := "2.11.7"
 
 scalacOptions := Seq("-feature", "-unchecked", "-deprecation", "-encoding", "utf8")
 
@@ -21,26 +21,26 @@ libraryDependencies ++= {
   Seq(
     // akka
     "com.typesafe.akka"   %%  "akka-actor"    % akkaV,
+    "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
+    "com.typesafe.akka"   %%  "akka-slf4j"    % akkaV,
 
     // spray
     "io.spray"            %%  "spray-can"     % sprayV,
     "io.spray"            %%  "spray-routing" % sprayV,
     "io.spray"            %%  "spray-client"  % sprayV,
     "io.spray"            %%  "spray-httpx"   % sprayV,
-
-    // json
-    "org.json4s"          %% "json4s-native"  % "3.2.11",
     "io.spray"            %%  "spray-json"    % "1.3.2",
+    "io.spray"            %%  "spray-testkit" % sprayV  % "test",
+
+    // json loader/parser
+    "org.json4s"          %% "json4s-native"  % "3.2.11",
 
     // test
-    "io.spray"            %%  "spray-testkit" % sprayV  % "test",
-    "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
     "org.specs2"          %%  "specs2-core"   % "3.6.4" % "test",
     "org.scalatest"       %   "scalatest_2.11"% "2.2.4",
     "junit"               %   "junit"         % "4.12",
 
     // log
-    "com.typesafe.akka"   %%  "akka-slf4j"      % akkaV,
     "ch.qos.logback"      %  "logback-classic"  % "1.1.2",
 
     // Html parser
